@@ -33,7 +33,8 @@ import (
 
 //SerName 服务名
 var SerName string
-var Appkey, Appsercet string
+var Appkey string
+var Appsercet string
 
 // func Getkey(appkey string, appsercet string) error {
 // 	var tableName string
@@ -79,7 +80,7 @@ func createOrder(Tablename string, Time int64, Package string, Funcname string, 
 	log.Println("-=============================ooo3")
 	var order pb.Order
 
-
+	
 	aggregateID := uuid.NewV4().String()
 	order.OrderId = aggregateID
 	order.Tablename = Tablename
@@ -109,11 +110,15 @@ func createOrder(Tablename string, Time int64, Package string, Funcname string, 
 
 	//调用nats发送消息
 	err := createOrderNats(order)
+	log.Println("-=============================ooo9")
+
 	if err != nil {
-		fmt.Println("grpc错误")
+		log.Println("-=============================ooo10")
+		fmt.Println("nats错误")
 		log.Print(err)
 		return
 	}
+	log.Println("-=============================ooo11111")
 }
 
 func createOrderNats(order pb.Order) error {
@@ -123,22 +128,33 @@ func createOrderNats(order pb.Order) error {
 	//连接nats服务器
 	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL("nats://118.24.5.107:4222"))
 
-
 	if err != nil {
-		Sugar.Info(err)
+		log.Fatal(err)
+		return nil
 	} else {
-		Sugar.Info("1111")
+		log.Println("succcccccccccccccccccccccccccccccccccc")
 	}
+
+	// if err != nil {
+	// 	Sugar.Info(err)
+	// } else {
+	// 	Sugar.Info("1111")
+	// }
 
 	orderJSON, _ := json.Marshal(order)
-
+log.Println("-=============================ooo7")
+	fmt.Println(string(orderJSON))
+	log.Println("-=============================ooo8")
 	err = sc.Publish(channel, orderJSON)
 	log.Println("-=============================oooo2")
-	if err != nil {
-		return errors.Wrap(err, "Error from nats server")
-	} else {
-		return nil
-	}
+	return err
+	// if err != nil {
+
+	// 	log.Println("-=============================oooo444445")
+	// 	return errors.Wrap(err, "Error from nats server")
+	// } else {
+	// 	return nil
+	// }
 
 }
 
@@ -255,15 +271,16 @@ func (s *SugaredLoggers) Info(args ...interface{}) {
 
 	pc,_,Line,_ := runtime.Caller(1)
     f := runtime.FuncForPC(pc)
-    Funcname := f.Name()
+    Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
-
+	log.Println("-=============================ooo22222222222")
 	//请求网关服务
 	//如果成功就打印日志，失败就打印连接失败
 
-	Sugar.Info(args)
+	// Sugar.Info(args)
+	log.Println("-=============================ooo2222222222222324324324")
 }
 
 // Warn uses fmt.Sprint to construct and log a message.
@@ -293,7 +310,7 @@ func (s *SugaredLoggers) Warn(args ...interface{}) {
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
-	Sugar.Warn(args)
+	// Sugar.Warn(args)
 }
 
 // Error uses fmt.Sprint to construct and log a message.
@@ -323,7 +340,7 @@ func (s *SugaredLoggers) Error(args ...interface{}) {
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
-	Sugar.Error(args)
+	// Sugar.Error(args)
 }
 
 // DPanic uses fmt.Sprint to construct and log a message. In development, the
@@ -354,7 +371,7 @@ func (s *SugaredLoggers) DPanic(args ...interface{}) {
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
-	Sugar.DPanic(args)
+	// Sugar.DPanic(args)
 }
 
 // Panic uses fmt.Sprint to construct and log a message, then panics.
@@ -384,7 +401,7 @@ func (s *SugaredLoggers) Panic(args ...interface{}) {
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
-	Sugar.Panic(args)
+	// Sugar.Panic(args)
 }
 
 // Fatal uses fmt.Sprint to construct and log a message, then calls os.Exit.
@@ -414,5 +431,5 @@ func (s *SugaredLoggers) Fatal(args ...interface{}) {
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
-	Sugar.Fatal(args)
+	// Sugar.Fatal(args)
 }
