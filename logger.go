@@ -67,7 +67,7 @@ const (
 	grpcUri             = "118.24.5.107:50051"
 
 	clusterID  = "test-cluster"
-	clientID   = "order-query-store1"
+	clientID   = "order-query-store3"
 	durableID  = "store-durable"
 	queueGroup = "order-query-store-group"
 )
@@ -121,11 +121,8 @@ func createOrderNats(order pb.Order) error {
 	log.Println("-=============================ooo1")
 
 	//连接nats服务器
-	sc, err := stan.Connect(
-		clusterID,
-		clientID,
-		stan.NatsURL("localhost:4222"),
-	)
+	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL("nats://118.24.5.107:4222"))
+
 
 	if err != nil {
 		Sugar.Info(err)
