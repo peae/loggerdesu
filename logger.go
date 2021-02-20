@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/gocql/gocql"
-	"github.com/peae/gologsdk/pb"
+	"github.com/peae/loggerdesu/pb"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
