@@ -13,10 +13,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/gocql/gocql"
+	// "github.com/gocql/gocql"
 	"github.com/peae/loggerdesu/pb"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -31,29 +33,30 @@ import (
 
 //SerName 服务名
 var SerName string
+var Appkey, Appsercet string
 
-func Getkey(appkey string, appsercet string) error {
-	var tableName string
-	cluster := gocql.NewCluster("118.24.5.107")
-	cluster.Keyspace = "test"
-	cluster.Consistency = 1
-	session, _ := cluster.CreateSession()
-	//设置连接池的数量,默认是2个（针对每一个host,都建立起NumConns个连接）
-	cluster.NumConns = 3
+// func Getkey(appkey string, appsercet string) error {
+// 	var tableName string
+// 	cluster := gocql.NewCluster("118.24.5.107")
+// 	cluster.Keyspace = "test"
+// 	cluster.Consistency = 1
+// 	session, _ := cluster.CreateSession()
+// 	//设置连接池的数量,默认是2个（针对每一个host,都建立起NumConns个连接）
+// 	cluster.NumConns = 3
 
-	iter := session.Query(`SELECT table_name FROM congruentrelationship WHERE app_key = ? AND app_secret = ? allow filtering`, appkey, appsercet).Iter()
-	for iter.Scan(&tableName) {
-	}
+// 	iter := session.Query(`SELECT table_name FROM congruentrelationship WHERE app_key = ? AND app_secret = ? allow filtering`, appkey, appsercet).Iter()
+// 	for iter.Scan(&tableName) {
+// 	}
 
-	if err := iter.Close(); err != nil {
-		log.Println(err, "查询出错")
-		return err
-	}
-	fmt.Print(tableName)
-	SerName = tableName
+// 	if err := iter.Close(); err != nil {
+// 		log.Println(err, "查询出错")
+// 		return err
+// 	}
+// 	fmt.Print(tableName)
+// 	SerName = tableName
 
-	return nil
-}
+// 	return nil
+// }
 
 const (
 	_oddNumberErrMsg    = "Ignored key without a value."
@@ -72,15 +75,22 @@ const (
 var Logger *zap.Logger
 var Sugar *zap.SugaredLogger
 
-func createOrder(Tablename string, Time int64, Text string) {
+func createOrder(Tablename string, Time int64, Package string, Funcname string, Line string, Text string) {
 	log.Println("-=============================ooo3")
 	var order pb.Order
+
 
 	aggregateID := uuid.NewV4().String()
 	order.OrderId = aggregateID
 	order.Tablename = Tablename
 	order.Time = Time
 	order.Text = Text
+	order.AppKey = Appkey
+	order.AppSercet = Appsercet
+	order.Package = Package
+	order.Funcname = Funcname
+	order.Line = Line
+	order.Msg = Text
 	//设置服务名
 	//设置时间
 	//设置日志内容
@@ -192,10 +202,13 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 func Init(appkey string, appserct string) {
 	//根据appkey和appsercet获取tablename
 	//err := zap.Getkey("bqdefklopgp1hg11ofh0", "bqdefklopgp1hg11ofhg")
-	err := Getkey(appkey, appserct)
-	if err != nil {
-		fmt.Println(err)
-	}
+
+	Appkey = appkey
+	Appsercet = appserct
+	// err := Getkey(appkey, appserct)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   "service.log",
 		MaxSize:    500, // megabytes
@@ -242,7 +255,13 @@ func (s *SugaredLoggers) Info(args ...interface{}) {
 
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	createOrder(SerName, t1, c)
+
+	pc,_,Line,_ := runtime.Caller(1)
+    f := runtime.FuncForPC(pc)
+    Funcname := f.Name()
+	Package := strings.Split(f.Name(), ".")[0]
+
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
 
 	//请求网关服务
 	//如果成功就打印日志，失败就打印连接失败
@@ -271,7 +290,12 @@ func (s *SugaredLoggers) Warn(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	createOrder(SerName, t1, c)
+	pc,_,Line,_ := runtime.Caller(1)
+    f := runtime.FuncForPC(pc)
+    Funcname := f.Name()
+	Package := strings.Split(f.Name(), ".")[0]
+
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
 	Sugar.Warn(args)
 }
 
@@ -296,7 +320,12 @@ func (s *SugaredLoggers) Error(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	createOrder(SerName, t1, c)
+	pc,_,Line,_ := runtime.Caller(1)
+    f := runtime.FuncForPC(pc)
+    Funcname := f.Name()
+	Package := strings.Split(f.Name(), ".")[0]
+
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
 	Sugar.Error(args)
 }
 
@@ -322,7 +351,12 @@ func (s *SugaredLoggers) DPanic(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	createOrder(SerName, t1, c)
+	pc,_,Line,_ := runtime.Caller(1)
+    f := runtime.FuncForPC(pc)
+    Funcname := f.Name()
+	Package := strings.Split(f.Name(), ".")[0]
+
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
 	Sugar.DPanic(args)
 }
 
@@ -347,7 +381,12 @@ func (s *SugaredLoggers) Panic(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	createOrder(SerName, t1, c)
+	pc,_,Line,_ := runtime.Caller(1)
+    f := runtime.FuncForPC(pc)
+    Funcname := f.Name()
+	Package := strings.Split(f.Name(), ".")[0]
+
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
 	Sugar.Panic(args)
 }
 
@@ -372,6 +411,11 @@ func (s *SugaredLoggers) Fatal(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	createOrder(SerName, t1, c)
+	pc,_,Line,_ := runtime.Caller(1)
+    f := runtime.FuncForPC(pc)
+    Funcname := f.Name()
+	Package := strings.Split(f.Name(), ".")[0]
+
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
 	Sugar.Fatal(args)
 }
