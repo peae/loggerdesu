@@ -114,7 +114,7 @@ func createOrderNats(order pb.Order) error {
 	sc, err := stan.Connect(
 		clusterID,
 		clientID,
-		stan.NatsURL("nats1:4222"),
+		stan.NatsURL("118.24.5.107:4222"),
 	)
 
 	if err != nil {
