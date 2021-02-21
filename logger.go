@@ -75,12 +75,12 @@ const (
 
 var Logger *zap.Logger
 var Sugar *zap.SugaredLogger
+var Sc stan.Conn
 
-func createOrder(Tablename string, Time int64, Package string, Funcname string, Line string, Text string) {
+func createOrder(Tablename string, Time int64, Package string, Funcname string, Line string, Text string, Type string) {
 	log.Println("-=============================ooo3")
 	var order pb.Order
 
-	
 	aggregateID := uuid.NewV4().String()
 	order.OrderId = aggregateID
 	order.Tablename = Tablename
@@ -125,16 +125,6 @@ func createOrderNats(order pb.Order) error {
 
 	log.Println("-=============================ooo1")
 
-	//连接nats服务器
-	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL("nats://118.24.5.107:4222"))
-
-	if err != nil {
-		log.Fatal(err)
-		return nil
-	} else {
-		log.Println("succcccccccccccccccccccccccccccccccccc")
-	}
-
 	// if err != nil {
 	// 	Sugar.Info(err)
 	// } else {
@@ -142,10 +132,10 @@ func createOrderNats(order pb.Order) error {
 	// }
 
 	orderJSON, _ := json.Marshal(order)
-log.Println("-=============================ooo7")
+	log.Println("-=============================ooo7")
 	fmt.Println(string(orderJSON))
 	log.Println("-=============================ooo8")
-	err = sc.Publish(channel, orderJSON)
+	err := Sc.Publish(channel, orderJSON)
 	log.Println("-=============================oooo2")
 	return err
 	// if err != nil {
@@ -212,16 +202,21 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
-func Init(appkey string, appserct string) {
+func Init(appkey string, appserct string) error {
 	//根据appkey和appsercet获取tablename
 	//err := zap.Getkey("bqdefklopgp1hg11ofh0", "bqdefklopgp1hg11ofhg")
 
+	//连接nats服务器
+	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL("nats://118.24.5.107:4222"))
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	Sc = sc
 	Appkey = appkey
 	Appsercet = appserct
-	// err := Getkey(appkey, appserct)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
+
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   "service.log",
 		MaxSize:    500, // megabytes
@@ -269,9 +264,9 @@ func (s *SugaredLoggers) Info(args ...interface{}) {
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
 
-	pc,_,Line,_ := runtime.Caller(1)
-    f := runtime.FuncForPC(pc)
-    Funcname := strings.Split(f.Name(), ".")[1]
+	pc, _, Line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
@@ -304,9 +299,9 @@ func (s *SugaredLoggers) Warn(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	pc,_,Line,_ := runtime.Caller(1)
-    f := runtime.FuncForPC(pc)
-    Funcname := f.Name()
+	pc, _, Line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	Funcname := f.Name()
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
@@ -334,9 +329,9 @@ func (s *SugaredLoggers) Error(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	pc,_,Line,_ := runtime.Caller(1)
-    f := runtime.FuncForPC(pc)
-    Funcname := f.Name()
+	pc, _, Line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	Funcname := f.Name()
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
@@ -365,9 +360,9 @@ func (s *SugaredLoggers) DPanic(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	pc,_,Line,_ := runtime.Caller(1)
-    f := runtime.FuncForPC(pc)
-    Funcname := f.Name()
+	pc, _, Line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	Funcname := f.Name()
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
@@ -395,9 +390,9 @@ func (s *SugaredLoggers) Panic(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	pc,_,Line,_ := runtime.Caller(1)
-    f := runtime.FuncForPC(pc)
-    Funcname := f.Name()
+	pc, _, Line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	Funcname := f.Name()
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
@@ -425,9 +420,9 @@ func (s *SugaredLoggers) Fatal(args ...interface{}) {
 	fmt.Println(c)
 	t1 := time.Now().Unix() //1564552562
 	//发送订单信息
-	pc,_,Line,_ := runtime.Caller(1)
-    f := runtime.FuncForPC(pc)
-    Funcname := f.Name()
+	pc, _, Line, _ := runtime.Caller(1)
+	f := runtime.FuncForPC(pc)
+	Funcname := f.Name()
 	Package := strings.Split(f.Name(), ".")[0]
 
 	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
