@@ -77,7 +77,7 @@ var Logger *zap.Logger
 var Sugar *zap.SugaredLogger
 var Sc stan.Conn
 
-func createOrder(Tablename string, Time int64, Package string, Funcname string, Line string, Text string, Type string) {
+func createOrder(Tablename string, Time int64, Package string, Funcname string, Line string, Text string, Type string, Tagname string) {
 	log.Println("-=============================ooo3")
 	var order pb.Order
 
@@ -92,6 +92,8 @@ func createOrder(Tablename string, Time int64, Package string, Funcname string, 
 	order.Funcname = Funcname
 	order.Line = Line
 	order.Msg = Text
+	order.Type = Type
+	order.Tagname = Tagname
 	//设置服务名
 	//设置时间
 	//设置日志内容
@@ -202,12 +204,12 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
-func Init(appkey string, appserct string) error {
+func Init(appkey string, appserct string, clientId2 string) error {
 	//根据appkey和appsercet获取tablename
 	//err := zap.Getkey("bqdefklopgp1hg11ofh0", "bqdefklopgp1hg11ofhg")
 
 	//连接nats服务器
-	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL("nats://118.24.5.107:4222"))
+	sc, err := stan.Connect(clusterID, clientId2, stan.NatsURL("nats://10.10.10.10:4222"))
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -231,6 +233,7 @@ func Init(appkey string, appserct string) error {
 	)
 	Logger = zap.New(core, zap.AddCaller())
 	Sugar = Logger.Sugar()
+	return nil
 }
 
 type SugaredLoggers struct {
@@ -242,7 +245,7 @@ func GetSugaredLoggers() *SugaredLoggers {
 }
 
 // Info uses fmt.Sprint to construct and log a message.//监听grpc,将信息插入到数据库
-func (s *SugaredLoggers) Info(args ...interface{}) {
+func (s *SugaredLoggers) Info(Tagname string, args ...interface{}) {
 	log.Println("-=============================ooo56")
 	//循环遍历不定参数
 	var c string
@@ -269,7 +272,7 @@ func (s *SugaredLoggers) Info(args ...interface{}) {
 	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "info", Tagname)
 	log.Println("-=============================ooo22222222222")
 	//请求网关服务
 	//如果成功就打印日志，失败就打印连接失败
@@ -279,7 +282,7 @@ func (s *SugaredLoggers) Info(args ...interface{}) {
 }
 
 // Warn uses fmt.Sprint to construct and log a message.
-func (s *SugaredLoggers) Warn(args ...interface{}) {
+func (s *SugaredLoggers) Warn(Tagname string, args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -301,15 +304,15 @@ func (s *SugaredLoggers) Warn(args ...interface{}) {
 	//发送订单信息
 	pc, _, Line, _ := runtime.Caller(1)
 	f := runtime.FuncForPC(pc)
-	Funcname := f.Name()
+	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "warn", Tagname)
 	// Sugar.Warn(args)
 }
 
 // Error uses fmt.Sprint to construct and log a message.
-func (s *SugaredLoggers) Error(args ...interface{}) {
+func (s *SugaredLoggers) Error(Tagname string, args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -331,16 +334,16 @@ func (s *SugaredLoggers) Error(args ...interface{}) {
 	//发送订单信息
 	pc, _, Line, _ := runtime.Caller(1)
 	f := runtime.FuncForPC(pc)
-	Funcname := f.Name()
+	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "error", Tagname)
 	// Sugar.Error(args)
 }
 
 // DPanic uses fmt.Sprint to construct and log a message. In development, the
 // logger then panics. (See DPanicLevel for details.)
-func (s *SugaredLoggers) DPanic(args ...interface{}) {
+func (s *SugaredLoggers) DPanic(Tagname string, args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -362,15 +365,15 @@ func (s *SugaredLoggers) DPanic(args ...interface{}) {
 	//发送订单信息
 	pc, _, Line, _ := runtime.Caller(1)
 	f := runtime.FuncForPC(pc)
-	Funcname := f.Name()
+	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "dpanic", Tagname)
 	// Sugar.DPanic(args)
 }
 
 // Panic uses fmt.Sprint to construct and log a message, then panics.
-func (s *SugaredLoggers) Panic(args ...interface{}) {
+func (s *SugaredLoggers) Panic(Tagname string, args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -392,15 +395,15 @@ func (s *SugaredLoggers) Panic(args ...interface{}) {
 	//发送订单信息
 	pc, _, Line, _ := runtime.Caller(1)
 	f := runtime.FuncForPC(pc)
-	Funcname := f.Name()
+	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "panic", Tagname)
 	// Sugar.Panic(args)
 }
 
 // Fatal uses fmt.Sprint to construct and log a message, then calls os.Exit.
-func (s *SugaredLoggers) Fatal(args ...interface{}) {
+func (s *SugaredLoggers) Fatal(Tagname string, args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -422,9 +425,9 @@ func (s *SugaredLoggers) Fatal(args ...interface{}) {
 	//发送订单信息
 	pc, _, Line, _ := runtime.Caller(1)
 	f := runtime.FuncForPC(pc)
-	Funcname := f.Name()
+	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "fatal", Tagname)
 	// Sugar.Fatal(args)
 }
