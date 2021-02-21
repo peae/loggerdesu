@@ -209,7 +209,7 @@ func Init(appkey string, appserct string, clientId2 string) error {
 	//err := zap.Getkey("bqdefklopgp1hg11ofh0", "bqdefklopgp1hg11ofhg")
 
 	//连接nats服务器
-	sc, err := stan.Connect(clusterID, clientId2, stan.NatsURL("nats://10.10.10.10:4222"))
+	sc, err := stan.Connect(clusterID, clientId2, stan.NatsURL("nats://118.24.5.107:4222"))
 	if err != nil {
 		log.Fatal(err)
 		return err
