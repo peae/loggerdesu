@@ -17,14 +17,14 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 type Order struct {
-	AppKey    string `json:AppKey,omitempty"`     //返回的状态码
-	AppSercet string `json:"Appsecret,omitempty"` //请求是否成功 1成功，0不成功
+	AppKey    string `json:appKey,omitempty"`     //返回的状态码
+	AppSercet string `json:"appsecret,omitempty"` //请求是否成功 1成功，0不成功
 	Tagname   string `json:"tagname,omitempty"`   //标签名
-	Type      string `json:"Type,omitempty"`      //数据类型
-	Package   string `json:"Package,omitempty"`   //数据类型
-	Line      string `json:"Line,omitempty"`      //数据类型
-	Funcname  string `json:"Funcname,omitempty"`  //数据类型
-	Msg       string `json:"Msg,omitempty"`       //请求失败的原因
+	Type      string `json:"type,omitempty"`      //数据类型
+	Package   string `json:"package,omitempty"`   //数据类型
+	Line      string `json:"line,omitempty"`      //数据类型
+	Funcname  string `json:"funcname,omitempty"`  //数据类型
+	Msg       string `json:"msg,omitempty"`       //请求失败的原因
 	
 	OrderId    string `protobuf:"bytes,1,opt,name=order_id,json=orderId" json:"order_id,omitempty"`
 	CustomerId string `protobuf:"bytes,2,opt,name=customer_id,json=customerId" json:"customer_id,omitempty"`
