@@ -2,8 +2,8 @@
  * @Description: In User Settings Edit
  * @Author: your name
  * @Date: 2019-09-27 08:47:02
- * @LastEditTime: 2019-09-27 08:47:02
- * @LastEditors: your name
+ * @LastEditTime: 2021-02-28 13:13:34
+ * @LastEditors: Please set LastEditors
  */
 package loggerdesu
 
@@ -33,8 +33,9 @@ import (
 
 //SerName 服务名
 var SerName string
-var Appkey string
-var Appsercet string
+
+// var Appkey string
+// var Appsercet string
 
 // func Getkey(appkey string, appsercet string) error {
 // 	var tableName string
@@ -77,7 +78,7 @@ var Logger *zap.Logger
 var Sugar *zap.SugaredLogger
 var Sc stan.Conn
 
-func createOrder(Tablename string, Time int64, Package string, Funcname string, Line string, Text string, Type string, Tagname string) {
+func createOrder(Tablename string, Time int64, Package string, Funcname string, Line string, Text string, Type string, s SugaredLoggers) {
 	log.Println("-=============================ooo3")
 	var order pb.Order
 
@@ -86,14 +87,15 @@ func createOrder(Tablename string, Time int64, Package string, Funcname string, 
 	order.Tablename = Tablename
 	order.Time = Time
 	order.Text = Text
-	order.AppKey = Appkey
-	order.AppSercet = Appsercet
+	order.AppKey = s.Appkey
+	order.AppSercet = s.Appserct
 	order.Package = Package
 	order.Funcname = Funcname
 	order.Line = Line
 	order.Msg = Text
 	order.Type = Type
-	order.Tagname = Tagname
+	order.Tagname = s.Tagname
+	order.RequestURL = s.RequestURL
 	//设置服务名
 	//设置时间
 	//设置日志内容
@@ -204,20 +206,42 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
-func Init(appkey string, appserct string, clientId2 string) error {
+/**
+ * @description: hanfei
+ * @param {string} appkey
+ * @param {string} appserct
+ * @param {string} clientId2	 连接nats服务器所需id,不能重复
+ * @param {string} requesturl	 请求路径
+ * @param {string} tagname		 标签名
+ * @param {string} natsURL		 nats服务器地址, 例如："nats://10.10.10.10:4222"
+ * @return {*}
+ */
+func Init(appkey string, appserct string, clientId2 string, requesturl string, tagname string, natsURL string) (error, SugaredLoggers) {
+
+	sugaredLoggers := SugaredLoggers{
+		Appkey:     appkey,
+		Appserct:   appserct,
+		ClientId2:  clientId2,
+		RequestURL: requesturl,
+		Tagname:    tagname,
+	}
+
+	log.Println("=============", sugaredLoggers)
+
 	//根据appkey和appsercet获取tablename
 	//err := zap.Getkey("bqdefklopgp1hg11ofh0", "bqdefklopgp1hg11ofhg")
 
 	//连接nats服务器
-	sc, err := stan.Connect(clusterID, clientId2, stan.NatsURL("nats://118.24.5.107:4222"))
+	// "nats://10.10.10.10:4222"
+	sc, err := stan.Connect(clusterID, clientId2, stan.NatsURL(natsURL))
 	if err != nil {
 		log.Fatal(err)
-		return err
+		return err, sugaredLoggers
 	}
 
 	Sc = sc
-	Appkey = appkey
-	Appsercet = appserct
+	// Appkey = appkey
+	// Appsercet = appserct
 
 	w := zapcore.AddSync(&lumberjack.Logger{
 		Filename:   "service.log",
@@ -233,10 +257,15 @@ func Init(appkey string, appserct string, clientId2 string) error {
 	)
 	Logger = zap.New(core, zap.AddCaller())
 	Sugar = Logger.Sugar()
-	return nil
+	return nil, sugaredLoggers
 }
 
 type SugaredLoggers struct {
+	Appkey     string
+	Appserct   string
+	ClientId2  string
+	RequestURL string
+	Tagname    string
 }
 
 func GetSugaredLoggers() *SugaredLoggers {
@@ -245,8 +274,8 @@ func GetSugaredLoggers() *SugaredLoggers {
 }
 
 // Info uses fmt.Sprint to construct and log a message.//监听grpc,将信息插入到数据库
-func (s *SugaredLoggers) Info(Tagname string, args ...interface{}) {
-	log.Println("-=============================ooo56")
+func (s *SugaredLoggers) Info(args ...interface{}) {
+	log.Println("-=============================ooo56", s.RequestURL)
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -272,7 +301,7 @@ func (s *SugaredLoggers) Info(Tagname string, args ...interface{}) {
 	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "info", Tagname)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "info", *s)
 	log.Println("-=============================ooo22222222222")
 	//请求网关服务
 	//如果成功就打印日志，失败就打印连接失败
@@ -282,7 +311,10 @@ func (s *SugaredLoggers) Info(Tagname string, args ...interface{}) {
 }
 
 // Warn uses fmt.Sprint to construct and log a message.
-func (s *SugaredLoggers) Warn(Tagname string, args ...interface{}) {
+func (s *SugaredLoggers) Warn(args ...interface{}) {
+
+	log.Println("============s:", s)
+	log.Println("============s:", *s)
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -307,12 +339,12 @@ func (s *SugaredLoggers) Warn(Tagname string, args ...interface{}) {
 	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "warn", Tagname)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "warn", *s)
 	// Sugar.Warn(args)
 }
 
 // Error uses fmt.Sprint to construct and log a message.
-func (s *SugaredLoggers) Error(Tagname string, args ...interface{}) {
+func (s *SugaredLoggers) Error(args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -337,13 +369,13 @@ func (s *SugaredLoggers) Error(Tagname string, args ...interface{}) {
 	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "error", Tagname)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "error", *s)
 	// Sugar.Error(args)
 }
 
 // DPanic uses fmt.Sprint to construct and log a message. In development, the
 // logger then panics. (See DPanicLevel for details.)
-func (s *SugaredLoggers) DPanic(Tagname string, args ...interface{}) {
+func (s *SugaredLoggers) DPanic(args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -368,12 +400,12 @@ func (s *SugaredLoggers) DPanic(Tagname string, args ...interface{}) {
 	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "dpanic", Tagname)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "dpanic", *s)
 	// Sugar.DPanic(args)
 }
 
 // Panic uses fmt.Sprint to construct and log a message, then panics.
-func (s *SugaredLoggers) Panic(Tagname string, args ...interface{}) {
+func (s *SugaredLoggers) Panic(args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -398,12 +430,12 @@ func (s *SugaredLoggers) Panic(Tagname string, args ...interface{}) {
 	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "panic", Tagname)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "panic", *s)
 	// Sugar.Panic(args)
 }
 
 // Fatal uses fmt.Sprint to construct and log a message, then calls os.Exit.
-func (s *SugaredLoggers) Fatal(Tagname string, args ...interface{}) {
+func (s *SugaredLoggers) Fatal(args ...interface{}) {
 	//循环遍历不定参数
 	var c string
 	for _, item := range args {
@@ -428,6 +460,6 @@ func (s *SugaredLoggers) Fatal(Tagname string, args ...interface{}) {
 	Funcname := strings.Split(f.Name(), ".")[1]
 	Package := strings.Split(f.Name(), ".")[0]
 
-	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "fatal", Tagname)
+	createOrder(SerName, t1, Package, Funcname, strconv.Itoa(Line), c, "fatal", *s)
 	// Sugar.Fatal(args)
 }

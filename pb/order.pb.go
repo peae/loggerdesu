@@ -25,6 +25,7 @@ type Order struct {
 	Line      string `json:"line,omitempty"`      //数据类型
 	Funcname  string `json:"funcname,omitempty"`  //数据类型
 	Msg       string `json:"msg,omitempty"`       //请求失败的原因
+	RequestURL	string	`json:"requesturl,omitempty` //请求路径
 	
 	OrderId    string `protobuf:"bytes,1,opt,name=order_id,json=orderId" json:"order_id,omitempty"`
 	CustomerId string `protobuf:"bytes,2,opt,name=customer_id,json=customerId" json:"customer_id,omitempty"`
