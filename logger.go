@@ -2,7 +2,7 @@
  * @Description: In User Settings Edit
  * @Author: your name
  * @Date: 2019-09-27 08:47:02
- * @LastEditTime: 2021-02-28 13:13:34
+ * @LastEditTime: 2021-03-01 14:00:47
  * @LastEditors: Please set LastEditors
  */
 package loggerdesu
@@ -96,6 +96,7 @@ func createOrder(Tablename string, Time int64, Package string, Funcname string, 
 	order.Type = Type
 	order.Tagname = s.Tagname
 	order.RequestURL = s.RequestURL
+	order.CreateTime = s.CreatTime.String()
 	//设置服务名
 	//设置时间
 	//设置日志内容
@@ -224,6 +225,7 @@ func Init(appkey string, appserct string, clientId2 string, requesturl string, t
 		ClientId2:  clientId2,
 		RequestURL: requesturl,
 		Tagname:    tagname,
+		CreatTime:  time.Now(),
 	}
 
 	log.Println("=============", sugaredLoggers)
@@ -266,6 +268,7 @@ type SugaredLoggers struct {
 	ClientId2  string
 	RequestURL string
 	Tagname    string
+	CreatTime  time.Time
 }
 
 func GetSugaredLoggers() *SugaredLoggers {
