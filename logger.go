@@ -97,6 +97,7 @@ func createOrder(Tablename string, Time int64, Package string, Funcname string, 
 	order.Tagname = s.Tagname
 	order.RequestURL = s.RequestURL
 	order.CreateTime = s.CreatTime.String()
+	order.RequestID = s.RequestID
 	//设置服务名
 	//设置时间
 	//设置日志内容
@@ -226,6 +227,7 @@ func Init(appkey string, appserct string, clientId2 string, requesturl string, t
 		RequestURL: requesturl,
 		Tagname:    tagname,
 		CreatTime:  time.Now(),
+		RequestID: uuid.NewV4().String(),
 	}
 
 	log.Println("=============", sugaredLoggers)
@@ -269,6 +271,7 @@ type SugaredLoggers struct {
 	RequestURL string
 	Tagname    string
 	CreatTime  time.Time
+	RequestID  string
 }
 
 func GetSugaredLoggers() *SugaredLoggers {
